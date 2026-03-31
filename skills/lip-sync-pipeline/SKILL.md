@@ -19,7 +19,7 @@ If you don't already have the blabberer Python package installed:
 
 ```bash
 # Clone the repo (if not already cloned)
-git clone https://github.com/historacle-ai/blabberer.git
+git clone https://github.com/HistOracle-production/blabberer.git
 cd blabberer
 
 # Install the Python package

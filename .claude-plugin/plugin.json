@@ -4,12 +4,12 @@
   "version": "0.1.0",
   "author": {
     "name": "HistOracle",
-    "url": "https://github.com/historacle-ai"
+    "url": "https://github.com/HistOracle-production"
   },
-  "homepage": "https://github.com/historacle-ai/blabberer",
+  "homepage": "https://github.com/HistOracle-production/blabberer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/historacle-ai/blabberer.git"
+    "url": "https://github.com/HistOracle-production/blabberer.git"
   },
   "license": "MIT",
   "keywords": [
