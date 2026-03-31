@@ -1,252 +1,308 @@
 /**
- * Simple lip sync demo — renders a face image with a canvas-drawn
- * animated mouth overlay driven by audio analysis.
+ * Blabberer Demo — premium lip sync experience.
+ *
+ * Shows full scene image with mouth sprites overlaid at the face position,
+ * driven by real-time audio analysis + text phoneme mapping.
+ * Includes a waveform visualizer in the controls bar.
  */
 
 import { AudioAnalyser } from './audioAnalyser';
 import { LipSyncEngine, type MouthShape } from './lipSync';
+import { MouthRenderer } from './mouthRenderer';
 
 // --- DOM ---
-const portrait = document.getElementById('portrait') as HTMLImageElement;
-const canvas = document.getElementById('mouth-canvas') as HTMLCanvasElement;
-const ctx = canvas.getContext('2d')!;
+const sceneCard = document.getElementById('scene-card') as HTMLElement;
+const spriteContainer = document.getElementById('sprite-container') as HTMLElement;
 const playBtn = document.getElementById('play-btn') as HTMLButtonElement;
-const stopBtn = document.getElementById('stop-btn') as HTMLButtonElement;
+const playIcon = document.getElementById('play-icon') as HTMLElement;
+const stopIcon = document.getElementById('stop-icon') as HTMLElement;
 const statusEl = document.getElementById('status') as HTMLElement;
+const statusDot = document.getElementById('status-dot') as HTMLElement;
 const shapeDisplay = document.getElementById('shape-display') as HTMLElement;
-const energyBar = document.getElementById('energy-bar') as HTMLElement;
+const timeDisplay = document.getElementById('time-display') as HTMLElement;
+const waveformCanvas = document.getElementById('waveform-canvas') as HTMLCanvasElement;
 const audioEl = document.getElementById('audio-player') as HTMLAudioElement;
+
+const waveCtx = waveformCanvas.getContext('2d')!;
+
+// --- Face region config ---
+let FACE_REGION = {
+  x: 0.4071,
+  y: 0.1580,
+  width: 0.2188,
+  height: 0.3905,
+};
 
 // --- State ---
 let audioAnalyser: AudioAnalyser | null = null;
 let lipSyncEngine: LipSyncEngine | null = null;
-let rafId = 0;
+let mouthRenderer: MouthRenderer | null = null;
+let monitorRaf = 0;
+let isPlaying = false;
 
-// Default transcript — replace with actual transcript for better results
 const TRANSCRIPT =
-  'Hello, I am demonstrating the blabber lip sync system. Watch how my mouth moves naturally as I speak these words.';
+  'Hello, I am demonstrating the blabberer lip sync system. Watch how my mouth moves naturally as I speak these words.';
 
-// --- Mouth position config (fraction of image dimensions) ---
-// Adjust these to position the mouth overlay on your face image
-const MOUTH_CENTER_X = 0.50; // horizontal center of mouth
-const MOUTH_CENTER_Y = 0.62; // vertical position of mouth
-const MOUTH_WIDTH = 0.18;    // mouth width as fraction of image width
-const MOUTH_HEIGHT = 0.08;   // mouth height as fraction of image height
+const SHAPE_NAMES: MouthShape[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'X'];
 
-// --- Resize canvas to match image ---
-function resizeCanvas(): void {
-  const rect = portrait.getBoundingClientRect();
-  canvas.width = rect.width * devicePixelRatio;
-  canvas.height = rect.height * devicePixelRatio;
-  ctx.scale(devicePixelRatio, devicePixelRatio);
+// --- Waveform colors ---
+const ACCENT = '#7c5cfc';
+const ACCENT_DIM = 'rgba(124,92,252,0.15)';
+
+// --- Position the sprite container over the face region ---
+function positionSpriteOverlay(): void {
+  spriteContainer.style.left = `${FACE_REGION.x * 100}%`;
+  spriteContainer.style.top = `${FACE_REGION.y * 100}%`;
+  spriteContainer.style.width = `${FACE_REGION.width * 100}%`;
+  spriteContainer.style.height = `${FACE_REGION.height * 100}%`;
 }
 
-portrait.addEventListener('load', resizeCanvas);
-window.addEventListener('resize', resizeCanvas);
+// --- Resize waveform canvas for crisp rendering ---
+function resizeWaveform(): void {
+  const rect = waveformCanvas.getBoundingClientRect();
+  waveformCanvas.width = rect.width * devicePixelRatio;
+  waveformCanvas.height = rect.height * devicePixelRatio;
+}
 
-// --- Draw mouth shape on canvas ---
-function drawMouth(shape: MouthShape, energy: number): void {
-  const w = canvas.width / devicePixelRatio;
-  const h = canvas.height / devicePixelRatio;
+// --- Draw waveform visualization ---
+function drawWaveform(analyser: AnalyserNode, dataArray: Uint8Array): void {
+  analyser.getByteFrequencyData(dataArray);
 
-  ctx.clearRect(0, 0, w, h);
+  const w = waveformCanvas.width;
+  const h = waveformCanvas.height;
+  const barCount = 48;
+  const gap = 2 * devicePixelRatio;
+  const barWidth = (w - gap * (barCount - 1)) / barCount;
+  const maxBarHeight = h * 0.85;
+  const radius = Math.min(barWidth / 2, 3 * devicePixelRatio);
 
-  if (shape === 'X') return; // rest — no overlay
+  waveCtx.clearRect(0, 0, w, h);
 
-  const cx = w * MOUTH_CENTER_X;
-  const cy = h * MOUTH_CENTER_Y;
-  const mw = w * MOUTH_WIDTH;
-  const mh = h * MOUTH_HEIGHT;
+  const step = Math.floor(dataArray.length / barCount);
 
-  // Scale openness by energy
-  const openness = Math.min(1, energy * 2.5);
+  for (let i = 0; i < barCount; i++) {
+    // Average a few bins per bar for smoother visualization
+    let sum = 0;
+    for (let j = 0; j < step; j++) {
+      sum += dataArray[i * step + j];
+    }
+    const val = sum / step / 255;
+    const barH = Math.max(3 * devicePixelRatio, val * maxBarHeight);
+    const x = i * (barWidth + gap);
+    const y = (h - barH) / 2;
 
-  ctx.save();
-  ctx.globalAlpha = 0.7;
+    // Gradient bar color based on intensity
+    const alpha = 0.3 + val * 0.7;
+    waveCtx.fillStyle = `rgba(124,92,252,${alpha})`;
 
-  switch (shape) {
-    case 'A': // M,B,P — closed lips
-      drawClosedMouth(cx, cy, mw);
-      break;
-    case 'B': // consonants — slight part
-      drawPartedMouth(cx, cy, mw, mh * 0.25 * openness);
-      break;
-    case 'C': // A,I — open vowel
-      drawOpenMouth(cx, cy, mw * 0.85, mh * 0.8 * Math.max(0.4, openness));
-      break;
-    case 'D': // E — wide stretch
-      drawWideMouth(cx, cy, mw * 1.1, mh * 0.5 * Math.max(0.3, openness));
-      break;
-    case 'E': // O — round
-      drawRoundMouth(cx, cy, mw * 0.5, mh * 0.7 * Math.max(0.4, openness));
-      break;
-    case 'F': // U,W,Q — pucker
-      drawRoundMouth(cx, cy, mw * 0.35, mh * 0.5 * Math.max(0.3, openness));
-      break;
-    case 'G': // F,V — teeth on lip
-      drawTeethMouth(cx, cy, mw * 0.8, mh * 0.4);
-      break;
-    case 'H': // L — tongue
-      drawOpenMouth(cx, cy, mw * 0.7, mh * 0.6 * Math.max(0.4, openness), true);
-      break;
+    // Rounded rect
+    waveCtx.beginPath();
+    waveCtx.roundRect(x, y, barWidth, barH, radius);
+    waveCtx.fill();
   }
-
-  ctx.restore();
 }
 
-function drawClosedMouth(cx: number, cy: number, w: number): void {
-  ctx.beginPath();
-  ctx.moveTo(cx - w / 2, cy);
-  ctx.quadraticCurveTo(cx, cy - 2, cx + w / 2, cy);
-  ctx.strokeStyle = '#1a0a0a';
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-}
+// --- Draw idle waveform (static bars) ---
+function drawIdleWaveform(): void {
+  const w = waveformCanvas.width;
+  const h = waveformCanvas.height;
+  const barCount = 48;
+  const gap = 2 * devicePixelRatio;
+  const barWidth = (w - gap * (barCount - 1)) / barCount;
+  const radius = Math.min(barWidth / 2, 3 * devicePixelRatio);
 
-function drawPartedMouth(cx: number, cy: number, w: number, openH: number): void {
-  const halfW = w / 2;
-  ctx.beginPath();
-  // Upper lip
-  ctx.moveTo(cx - halfW, cy);
-  ctx.quadraticCurveTo(cx, cy - openH * 0.5, cx + halfW, cy);
-  // Lower lip
-  ctx.quadraticCurveTo(cx, cy + openH * 1.5, cx - halfW, cy);
-  ctx.fillStyle = '#2a0808';
-  ctx.fill();
-  ctx.strokeStyle = '#1a0505';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-}
+  waveCtx.clearRect(0, 0, w, h);
 
-function drawOpenMouth(cx: number, cy: number, w: number, openH: number, tongue = false): void {
-  const halfW = w / 2;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, halfW, openH / 2, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#1a0505';
-  ctx.fill();
-
-  if (tongue) {
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + openH * 0.2, halfW * 0.5, openH * 0.2, 0, 0, Math.PI);
-    ctx.fillStyle = '#cc4444';
-    ctx.fill();
+  for (let i = 0; i < barCount; i++) {
+    const barH = 3 * devicePixelRatio;
+    const x = i * (barWidth + gap);
+    const y = (h - barH) / 2;
+    waveCtx.fillStyle = ACCENT_DIM;
+    waveCtx.beginPath();
+    waveCtx.roundRect(x, y, barWidth, barH, radius);
+    waveCtx.fill();
   }
-
-  // Teeth hint
-  ctx.beginPath();
-  ctx.rect(cx - halfW * 0.6, cy - openH / 2, halfW * 1.2, openH * 0.15);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.fill();
 }
 
-function drawWideMouth(cx: number, cy: number, w: number, openH: number): void {
-  const halfW = w / 2;
-  ctx.beginPath();
-  // Wider ellipse
-  ctx.ellipse(cx, cy, halfW, openH / 2, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#1a0505';
-  ctx.fill();
-
-  // Teeth
-  ctx.beginPath();
-  ctx.rect(cx - halfW * 0.7, cy - openH / 2, halfW * 1.4, openH * 0.12);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.fill();
+// --- Format time ---
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function drawRoundMouth(cx: number, cy: number, rw: number, rh: number): void {
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, rw, rh / 2, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#1a0505';
-  ctx.fill();
-  ctx.strokeStyle = '#330808';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+// --- Status helpers ---
+function setStatus(text: string, state: 'idle' | 'ready' | 'playing' | 'error' = 'idle'): void {
+  statusEl.textContent = text;
+  statusDot.className = 'status-dot';
+  if (state !== 'idle') statusDot.classList.add(state);
 }
 
-function drawTeethMouth(cx: number, cy: number, w: number, openH: number): void {
-  const halfW = w / 2;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, halfW, openH / 2, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#1a0505';
-  ctx.fill();
+// --- Sprite loading ---
+const SPRITE_PATHS = [
+  (name: string) => `./sample/soft/shape_${name}.webp`,
+  (name: string) => `./sample/shape_${name}.webp`,
+  (name: string) => `./sample/shape_${name}.png`,
+];
 
-  // Upper teeth prominent
-  ctx.beginPath();
-  ctx.rect(cx - halfW * 0.6, cy - openH / 2, halfW * 1.2, openH * 0.25);
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.fill();
+function tryLoadImage(urls: string[]): Promise<string | null> {
+  return new Promise(resolve => {
+    function attempt(i: number) {
+      if (i >= urls.length) { resolve(null); return; }
+      const img = new Image();
+      img.onload = () => resolve(urls[i]);
+      img.onerror = () => attempt(i + 1);
+      img.src = urls[i];
+    }
+    attempt(0);
+  });
+}
+
+async function loadSprites(): Promise<void> {
+  const sprites: Record<string, string> = {};
+
+  const promises = SHAPE_NAMES.map(async (name) => {
+    const urls = SPRITE_PATHS.map(fn => fn(name));
+    const found = await tryLoadImage(urls);
+    if (found) sprites[name] = found;
+  });
+
+  await Promise.all(promises);
+
+  const count = Object.keys(sprites).length;
+  if (count > 0) {
+    positionSpriteOverlay();
+    mouthRenderer = new MouthRenderer(spriteContainer);
+    mouthRenderer.loadSprites(sprites);
+    playBtn.disabled = false;
+    setStatus(`Ready - ${count} shapes loaded`, 'ready');
+  } else {
+    setStatus('No sprites found. Generate with: blabberer generate <image>', 'error');
+  }
 }
 
 // --- Playback ---
 function startPlayback(): void {
-  resizeCanvas();
+  if (!mouthRenderer) return;
 
   if (!audioAnalyser) {
     audioAnalyser = new AudioAnalyser();
   }
   const analyserNode = audioAnalyser.connect(audioEl);
   if (!analyserNode) {
-    statusEl.textContent = 'Failed to connect audio analyser';
+    setStatus('Failed to connect audio analyser', 'error');
     return;
   }
 
   lipSyncEngine = new LipSyncEngine(analyserNode);
   lipSyncEngine.loadText(TRANSCRIPT);
-
-  const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-
-  const animate = () => {
-    rafId = requestAnimationFrame(animate);
-    if (!lipSyncEngine) return;
-
-    const shape = lipSyncEngine.update(performance.now());
-
-    // Compute energy for mouth openness
-    analyserNode.getByteFrequencyData(dataArray);
-    let sum = 0;
-    const end = Math.min(30, dataArray.length);
-    for (let i = 1; i < end; i++) sum += dataArray[i];
-    const energy = sum / (end - 1) / 255;
-
-    drawMouth(shape, energy);
-    shapeDisplay.textContent = shape;
-    energyBar.style.width = `${Math.min(100, energy * 300)}%`;
-  };
+  mouthRenderer.startLoop(lipSyncEngine);
 
   audioEl.play().catch(err => {
-    statusEl.textContent = `Playback failed: ${err.message}`;
+    setStatus(`Playback failed: ${err.message}`, 'error');
   });
 
-  rafId = requestAnimationFrame(animate);
-  statusEl.textContent = 'Playing...';
-  playBtn.style.display = 'none';
-  stopBtn.style.display = 'inline-flex';
+  startMonitor(analyserNode);
+
+  isPlaying = true;
+  playIcon.style.display = 'none';
+  stopIcon.style.display = 'block';
+  sceneCard.classList.add('playing');
+  setStatus('Speaking...', 'playing');
 }
 
 function stopPlayback(): void {
   audioEl.pause();
   audioEl.currentTime = 0;
 
-  if (rafId) {
-    cancelAnimationFrame(rafId);
-    rafId = 0;
-  }
-
+  if (mouthRenderer) mouthRenderer.stopLoop();
   if (lipSyncEngine) lipSyncEngine.stop();
+  stopMonitor();
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  isPlaying = false;
+  playIcon.style.display = 'block';
+  stopIcon.style.display = 'none';
+  sceneCard.classList.remove('playing');
   shapeDisplay.textContent = 'X';
-  energyBar.style.width = '0%';
-  statusEl.textContent = 'Stopped. Click Play to restart.';
-  playBtn.style.display = 'inline-flex';
-  stopBtn.style.display = 'none';
+  shapeDisplay.classList.remove('active');
+  timeDisplay.textContent = '0:00';
+  drawIdleWaveform();
+  setStatus('Ready', 'ready');
+}
+
+// --- Monitor loop ---
+function startMonitor(analyser: AnalyserNode): void {
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+  const monitor = () => {
+    monitorRaf = requestAnimationFrame(monitor);
+    if (!lipSyncEngine) return;
+
+    const shape = lipSyncEngine.currentShape;
+    shapeDisplay.textContent = shape;
+
+    if (shape !== 'X') {
+      shapeDisplay.classList.add('active');
+    } else {
+      shapeDisplay.classList.remove('active');
+    }
+
+    // Update waveform
+    drawWaveform(analyser, dataArray);
+
+    // Update time
+    timeDisplay.textContent = formatTime(audioEl.currentTime);
+  };
+  monitorRaf = requestAnimationFrame(monitor);
+}
+
+function stopMonitor(): void {
+  if (monitorRaf) {
+    cancelAnimationFrame(monitorRaf);
+    monitorRaf = 0;
+  }
 }
 
 // --- Events ---
-playBtn.addEventListener('click', startPlayback);
-stopBtn.addEventListener('click', stopPlayback);
+playBtn.addEventListener('click', () => {
+  if (isPlaying) {
+    stopPlayback();
+  } else {
+    startPlayback();
+  }
+});
+
 audioEl.addEventListener('ended', () => {
   stopPlayback();
-  statusEl.textContent = 'Playback finished.';
+  setStatus('Finished', 'ready');
 });
+
+window.addEventListener('resize', () => {
+  positionSpriteOverlay();
+  resizeWaveform();
+  if (!isPlaying) drawIdleWaveform();
+});
+
+// --- Init ---
+async function init() {
+  setStatus('Loading...', 'idle');
+  playBtn.disabled = true;
+
+  resizeWaveform();
+  drawIdleWaveform();
+
+  // Load face region config
+  try {
+    const resp = await fetch('./sample/blabberer_config.json');
+    if (resp.ok) {
+      const config = await resp.json();
+      if (config?.face_region) {
+        FACE_REGION = config.face_region;
+      }
+    }
+  } catch { /* use defaults */ }
+
+  await loadSprites();
+}
+
+init();

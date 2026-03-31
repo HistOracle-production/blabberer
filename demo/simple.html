@@ -3,183 +3,364 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blabber — Simple Lip Sync Demo</title>
+  <title>Blabberer — AI Lip Sync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface-2: #13131d;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.12);
+      --text: #e8e8ed;
+      --text-secondary: #6b6b80;
+      --text-muted: #44445a;
+      --accent: #7c5cfc;
+      --accent-glow: rgba(124,92,252,0.25);
+      --accent-hover: #9178ff;
+      --red: #f43f5e;
+      --green: #10b981;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0a0a;
-      color: #e0e0e0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      overflow-x: hidden;
     }
 
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-      background: linear-gradient(135deg, #60a5fa, #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    /* --- Ambient glow behind the scene --- */
+    .ambient-glow {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+      filter: blur(80px);
     }
 
-    .subtitle {
-      color: #888;
-      font-size: 0.85rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .portrait-wrapper {
+    /* --- Header --- */
+    .header {
       position: relative;
-      width: 400px;
-      max-width: 90vw;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid #2a2a2a;
-      background: #141414;
+      z-index: 1;
+      text-align: center;
+      padding: 3rem 2rem 1.5rem;
     }
 
-    .portrait-wrapper img {
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #c084fc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .tagline {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+      max-width: 400px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* --- Main content --- */
+    .main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 780px;
+      padding: 0 1.5rem 3rem;
+    }
+
+    /* --- Scene card --- */
+    .scene-card {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 20px 60px -10px rgba(0,0,0,0.5),
+        0 0 120px -20px var(--accent-glow);
+      transition: box-shadow 0.4s ease;
+    }
+
+    .scene-card.playing {
+      box-shadow:
+        0 0 0 1px rgba(124,92,252,0.15),
+        0 20px 60px -10px rgba(0,0,0,0.5),
+        0 0 160px -20px rgba(124,92,252,0.35);
+    }
+
+    .scene-card img.scene-bg {
       display: block;
       width: 100%;
       height: auto;
     }
 
-    #mouth-canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+    #sprite-container {
+      position: absolute !important;
       pointer-events: none;
     }
 
-    .controls {
+    /* --- Controls overlay --- */
+    .controls-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
       display: flex;
+      align-items: center;
       gap: 0.75rem;
-      margin-top: 1.25rem;
-      align-items: center;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(to top, rgba(6,6,10,0.92) 0%, rgba(6,6,10,0.6) 70%, transparent 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: opacity 0.3s;
     }
 
-    button {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.65rem 1.4rem;
-      border: 1px solid #333;
-      border-radius: 8px;
-      background: #1a1a1a;
-      color: #e0e0e0;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    button:hover:not(:disabled) {
-      background: #252525;
-      border-color: #555;
-    }
-
-    button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    button.primary {
-      background: #2563eb;
-      border-color: #3b82f6;
+    .play-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
       color: white;
-      font-weight: 600;
-    }
-
-    button.primary:hover:not(:disabled) {
-      background: #1d4ed8;
-    }
-
-    button.danger {
-      background: #7f1d1d;
-      border-color: #991b1b;
-    }
-
-    button.danger:hover {
-      background: #991b1b;
-    }
-
-    .monitor {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      margin-top: 1rem;
-      padding: 0.6rem 1rem;
-      background: #141414;
-      border-radius: 8px;
-      border: 1px solid #2a2a2a;
-      font-size: 0.8rem;
-      color: #666;
-      min-width: 300px;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px var(--accent-glow);
     }
 
-    .shape-badge {
-      font-size: 1.4rem;
+    .play-btn:hover {
+      background: var(--accent-hover);
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px var(--accent-glow);
+    }
+
+    .play-btn:active { transform: scale(0.97); }
+
+    .play-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* --- Waveform visualizer --- */
+    .waveform-wrap {
+      flex: 1;
+      height: 36px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 6px;
+    }
+
+    #waveform-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* --- Time display --- */
+    .time-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      min-width: 3.2rem;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* --- Shape indicator pill --- */
+    .shape-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
       font-weight: 700;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      color: #60a5fa;
+      color: var(--accent);
+      background: rgba(124,92,252,0.12);
+      border: 1px solid rgba(124,92,252,0.2);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
       min-width: 2rem;
       text-align: center;
+      flex-shrink: 0;
+      letter-spacing: 0.05em;
+      transition: all 0.1s;
     }
 
-    .energy-track {
-      flex: 1;
-      height: 6px;
-      background: #252525;
-      border-radius: 3px;
-      overflow: hidden;
+    .shape-pill.active {
+      background: rgba(124,92,252,0.2);
+      border-color: rgba(124,92,252,0.4);
+      color: var(--accent-hover);
     }
 
-    .energy-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
-      border-radius: 3px;
-      width: 0%;
-      transition: width 50ms;
-    }
-
-    #status {
+    /* --- Info bar below scene --- */
+    .info-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
       margin-top: 0.75rem;
+    }
+
+    .status-text {
       font-size: 0.8rem;
-      color: #888;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 0.3s;
+    }
+
+    .status-dot.ready { background: var(--green); }
+    .status-dot.playing { background: var(--accent); animation: pulse 1.5s infinite; }
+    .status-dot.error { background: var(--red); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .tech-badge {
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    /* --- Footer --- */
+    .footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 1rem 2rem 2rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer a:hover { color: var(--accent); }
+
+    /* --- Responsive --- */
+    @media (max-width: 600px) {
+      .header { padding: 2rem 1rem 1rem; }
+      .main { padding: 0 0.75rem 2rem; }
+      .controls-bar { padding: 0.5rem 0.75rem; }
     }
 
     audio { display: none; }
   </style>
 </head>
 <body>
-  <h1>Blabber</h1>
-  <p class="subtitle">Simple lip sync demo</p>
+  <div class="ambient-glow"></div>
 
-  <div class="portrait-wrapper">
-    <img id="portrait" src="./sample/sample.png" alt="Portrait" />
-    <canvas id="mouth-canvas"></canvas>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 18c-4 0-7-2-7-5s3-5 7-5 7 2 7 5"/>
+          <circle cx="8.5" cy="13.5" r="0.5" fill="white" stroke="none"/>
+          <circle cx="15.5" cy="13.5" r="0.5" fill="white" stroke="none"/>
+        </svg>
+      </div>
+      <h1>blabberer</h1>
+    </div>
+    <p class="tagline">AI-powered lip sync sprites from any face image</p>
   </div>
 
-  <div class="controls">
-    <button id="play-btn" class="primary">Play</button>
-    <button id="stop-btn" class="danger" style="display: none;">Stop</button>
-  </div>
+  <div class="main">
+    <div class="scene-card" id="scene-card">
+      <img class="scene-bg" id="scene-bg" src="./sample/sample.png" alt="Scene" />
+      <div id="sprite-container"></div>
 
-  <div class="monitor">
-    <span class="shape-badge" id="shape-display">X</span>
-    <div class="energy-track">
-      <div class="energy-fill" id="energy-bar"></div>
+      <div class="controls-bar">
+        <button class="play-btn" id="play-btn" aria-label="Play">
+          <svg id="play-icon" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
+          <svg id="stop-icon" viewBox="0 0 24 24" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+
+        <div class="waveform-wrap">
+          <canvas id="waveform-canvas"></canvas>
+        </div>
+
+        <span class="shape-pill" id="shape-display">X</span>
+        <span class="time-display" id="time-display">0:00</span>
+      </div>
+    </div>
+
+    <div class="info-bar">
+      <div class="status-text">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status">Loading...</span>
+      </div>
+      <div class="badge-row">
+        <span class="tech-badge">Preston Blair 9-shape</span>
+        <span class="tech-badge">Web Audio API</span>
+      </div>
     </div>
   </div>
 
-  <div id="status">Click Play to start</div>
+  <div class="footer">
+    Open-source lip sync by <a href="https://github.com/historacle-ai/blabberer" target="_blank">blabberer</a> &middot; Built by <a href="https://historacle.ai" target="_blank">HistOracle</a>
+  </div>
 
   <audio id="audio-player" src="./sample/sample_audio.mp3" crossorigin="anonymous"></audio>
   <script type="module" src="/src/simple.ts"></script>

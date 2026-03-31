@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "blabber"
+name = "blabberer"
 version = "0.1.0"
 description = "Generate lip sync mouth shape sprites from any face image using AI"
 readme = "README.md"
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     { name = "HistOracle", email = "team@historacle.ai" },
 ]
-keywords = ["lip-sync", "viseme", "mouth-shapes", "sprites", "animation", "ai"]
+keywords = ["lip-sync", "viseme", "mouth-shapes", "sprites", "animation", "ai", "blabberer"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -29,18 +29,23 @@ dependencies = [
     "Pillow>=10.0",
     "rembg>=2.0",
     "mediapipe>=0.10",
+    "python-dotenv>=1.0",
 ]
 
+[project.optional-dependencies]
+cpu = ["onnxruntime>=1.14"]
+gpu = ["onnxruntime-gpu>=1.14"]
+
 [project.scripts]
-blabber = "blabber.cli:main"
+blabberer = "blabberer.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/historacle-ai/blabber"
-Repository = "https://github.com/historacle-ai/blabber"
-Issues = "https://github.com/historacle-ai/blabber/issues"
+Homepage = "https://github.com/historacle-ai/blabberer"
+Repository = "https://github.com/historacle-ai/blabberer"
+Issues = "https://github.com/historacle-ai/blabberer/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["blabber"]
+packages = ["blabberer"]
 
 [tool.hatch.build.targets.sdist]
-include = ["blabber/", "reference/", "README.md", "LICENSE"]
+include = ["blabberer/", "reference/", "README.md", "LICENSE"]

@@ -1,8 +1,8 @@
-# CLAUDE.md — Blabber
+# CLAUDE.md — Blabberer
 
 ## What This Project Is
 
-**Blabber** is an open-source lip sync sprite generator. It takes a face image as input and outputs 9 mouth shape sprites (Preston Blair phoneme system) using Gemini AI via OpenRouter. It also includes a browser demo that plays audio with real-time lip sync animation using those sprites.
+**Blabberer** is an open-source lip sync sprite generator. It takes a face image as input and outputs 9 mouth shape sprites (Preston Blair phoneme system) using Gemini AI via OpenRouter. It also includes a browser demo that plays audio with real-time lip sync animation using those sprites.
 
 **Origin:** Extracted from the [HistOracle](https://historacle.ai) production platform's lip sync pipeline.
 **GitHub org:** `historacle-ai` | **Owner:** Arun Kashyap (`kashyaparun25`)
@@ -11,12 +11,12 @@
 
 This repo is a **Claude Code plugin**. Users install it via:
 ```
-/plugin install historacle-ai/blabber
+/plugin install historacle-ai/blabberer
 ```
 
 Then use the skill:
 ```
-/blabber:lip-sync-pipeline photo.jpg
+/blabberer:lip-sync-pipeline photo.jpg
 ```
 
 ### Plugin structure
@@ -24,18 +24,18 @@ Then use the skill:
 - `skills/lip-sync-pipeline/SKILL.md` — The pipeline skill
 
 ### Skills
-- **`/blabber:lip-sync-pipeline`** — End-to-end sprite generation pipeline. Covers face detection, Gemini generation, post-processing, placement config, and demo integration.
+- **`/blabberer:lip-sync-pipeline`** — End-to-end sprite generation pipeline. Covers face detection, Gemini generation, post-processing, placement config, and demo integration.
 
 ## Architecture
 
 Two independent parts sharing no code:
 
 ```
-blabber/              Python package — image in, 9 mouth sprites out
+blabberer/              Python package — image in, 9 mouth sprites out
 demo/                 Vanilla TS + Vite — sprites + audio in, lip sync animation out
 ```
 
-## Python Package (`blabber/`)
+## Python Package (`blabberer/`)
 
 | File | Purpose | Source |
 |------|---------|--------|
@@ -43,13 +43,13 @@ demo/                 Vanilla TS + Vite — sprites + audio in, lip sync animati
 | `face_detect.py` | Auto face detection via MediaPipe (NEW — not in Historacle) | Written fresh |
 | `generator.py` | Core: face detect → crop → Gemini API → 9 sprites | Extracted + refactored from `scripts/generate_lip_sync_sprites.py` |
 | `postprocess.py` | rembg background removal + soft-edge feathering | Extracted from `scripts/generate_soft_edge_sprites.py` |
-| `cli.py` | CLI entry point: `blabber generate <image>` | Written fresh |
+| `cli.py` | CLI entry point: `blabberer generate <image>` | Written fresh |
 | `reference/` | 12 Preston Blair cartoon reference JPGs (bundled) | Copied from Historacle `frontend/public/lip-sync/reference/` with commas removed from filenames |
 
 ### CLI Usage
 ```bash
 export OPENROUTER_API_KEY=sk-or-...
-blabber generate photo.jpg --output-dir ./sprites --verbose
+blabberer generate photo.jpg --output-dir ./sprites --verbose
 ```
 
 ### Dependencies
@@ -93,14 +93,14 @@ cd demo && npm install && npm run dev
 - 12 reference images bundled and renamed (commas removed from filenames)
 - Git repo initialized (no commits yet)
 - Sample image (`demo/public/sample/sample.png`) and audio (`demo/public/sample/sample_audio.mp3`) placed
-- `/blabber:lip-sync-pipeline` skill created as Claude Code plugin (`.claude-plugin/` + `skills/`)
+- `/blabberer:lip-sync-pipeline` skill created as Claude Code plugin (`.claude-plugin/` + `skills/`)
 - Vite config routes to `simple.html` by default, supports both demo entry points
 
 ### TODO
-1. **Create GitHub repo + push** — `gh repo create historacle-ai/blabber --public --source . --push`
-2. **Generate sample sprites** — `blabber generate demo/public/sample/sample.png --output-dir demo/public/sample/sprites -v`
-3. **Test `pip install -e .`** — verify package installs and `blabber --help` works
-4. **Test plugin install** — from another project: `/plugin install historacle-ai/blabber`
+1. **Create GitHub repo + push** — `gh repo create historacle-ai/blabberer --public --source . --push`
+2. **Generate sample sprites** — `blabberer generate demo/public/sample/sample.png --output-dir demo/public/sample/sprites -v`
+3. **Test `pip install -e .`** — verify package installs and `blabberer --help` works
+4. **Test plugin install** — from another project: `/plugin install historacle-ai/blabberer`
 5. **Test full pipeline end-to-end** — generate sprites → copy to demo → verify in browser
 6. **Publish to PyPI** (later)
 7. **Submit to Anthropic plugin marketplace** (later) — https://platform.claude.com/plugins/submit
@@ -114,8 +114,8 @@ pip install -e .
 uv pip install -e .
 
 # Run CLI
-blabber --help
-blabber generate photo.jpg --api-key sk-or-... --output-dir ./sprites -v
+blabberer --help
+blabberer generate photo.jpg --api-key sk-or-... --output-dir ./sprites -v
 
 # Run demo
 cd demo && npm install && npm run dev

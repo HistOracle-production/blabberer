@@ -62,7 +62,7 @@ export class AudioAnalyser {
       this.analyser = analyser;
       this.source = source;
 
-      console.log('[Blabber] AudioAnalyser connected');
+      console.log('[Blabberer] AudioAnalyser connected');
       return analyser;
     } catch (err) {
       console.warn('[AudioAnalyser] Failed to connect:', err);

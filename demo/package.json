@@ -1,5 +1,5 @@
 {
-  "name": "blabber-demo",
+  "name": "blabberer-demo",
   "version": "0.1.0",
   "private": true,
   "description": "Interactive lip sync demo — load sprites + audio for real-time mouth animation",

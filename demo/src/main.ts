@@ -1,5 +1,5 @@
 /**
- * Blabber Demo — Interactive lip sync sprite player.
+ * Blabberer Demo — Interactive lip sync sprite player.
  *
  * Load mouth shape sprites + an audio file + optional transcript text
  * to see real-time lip sync animation in the browser.
@@ -250,7 +250,7 @@ transcriptInput.addEventListener('input', () => {
 sampleBtn.addEventListener('click', () => {
   loadSpritesFromPath('./sample');
   loadAudioFromPath('./sample/sample.mp3');
-  transcriptInput.value = 'Hello, I am demonstrating the blabber lip sync system. Watch how my mouth moves naturally as I speak these words.';
+  transcriptInput.value = 'Hello, I am demonstrating the blabberer lip sync system. Watch how my mouth moves naturally as I speak these words.';
   setStatus('Loading sample assets...');
 });
 

@@ -1,0 +1,17 @@
+{
+  "image_path": "demo/public/sample/sample.png",
+  "image_width": 2395,
+  "image_height": 1608,
+  "crop_box": [
+    975,
+    254,
+    1499,
+    882
+  ],
+  "face_region": {
+    "x": 0.4071,
+    "y": 0.158,
+    "width": 0.2188,
+    "height": 0.3905
+  }
+}

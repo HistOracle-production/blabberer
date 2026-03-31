@@ -25,14 +25,13 @@ export class MouthRenderer {
 
   constructor(container: HTMLElement) {
     this.container = container;
-    container.style.position = 'relative';
     container.style.overflow = 'hidden';
 
     const imgStyle = `
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      object-fit: contain;
+      object-fit: fill;
       pointer-events: none;
       transition: opacity ${CROSSFADE_MS}ms ease-in-out;
       will-change: opacity;

@@ -5,7 +5,7 @@ argument-hint: "[image_path]"
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Agent
 ---
 
-# Blabber — Lip Sync Sprite Pipeline
+# Blabberer — Lip Sync Sprite Pipeline
 
 Generate 9 mouth shape sprites from any face image using AI.
 
@@ -15,12 +15,12 @@ Input Image → Face Detection → Gemini AI → 9 Mouth Shapes → Background R
 
 ## Installation
 
-If you don't already have the blabber Python package installed:
+If you don't already have the blabberer Python package installed:
 
 ```bash
 # Clone the repo (if not already cloned)
-git clone https://github.com/historacle-ai/blabber.git
-cd blabber
+git clone https://github.com/historacle-ai/blabberer.git
+cd blabberer
 
 # Install the Python package
 pip install -e .
@@ -40,7 +40,7 @@ First run downloads the rembg U2Net model (~170MB). Subsequent runs are instant.
 ### One-command generation
 
 ```bash
-blabber generate <image_path> --output-dir ./sprites --verbose
+blabberer generate <image_path> --output-dir ./sprites --verbose
 ```
 
 This auto-detects the face, generates all 9 shapes, removes backgrounds, and applies soft edges.
@@ -57,7 +57,7 @@ sprites/
 ### Manual face crop (if auto-detection fails)
 
 ```bash
-blabber generate image.png --crop-box left,top,right,bottom
+blabberer generate image.png --crop-box left,top,right,bottom
 ```
 
 ## The 9 Preston Blair Shapes
@@ -117,7 +117,7 @@ The demo's `LipSyncEngine` uses a hybrid approach:
 ### Python API
 
 ```python
-from blabber import generate_sprites, full_postprocess
+from blabberer import generate_sprites, full_postprocess
 
 # Generate sprites
 results = generate_sprites(
@@ -153,7 +153,7 @@ No React, no framework dependencies.
 ## CLI Reference
 
 ```
-blabber generate <image> [options]
+blabberer generate <image> [options]
 
 Options:
   --api-key KEY          OpenRouter API key (or OPENROUTER_API_KEY env var)
