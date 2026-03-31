@@ -14,7 +14,7 @@ Turn any face photo into 9 production-ready mouth shape sprites — and animate 
 
 <br>
 
-<video src="https://github.com/HistOracle-production/blabberer/raw/main/demo/public/sample/demo_video.mp4" autoplay loop muted playsinline width="600"></video>
+https://github.com/user-attachments/assets/af47b852-281a-47c5-84c8-afd69edd79e9
 
 </div>
 
