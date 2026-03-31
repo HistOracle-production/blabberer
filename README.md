@@ -58,13 +58,15 @@ Portrait → Face Detection → Gemini AI → 9 Mouth Shapes → Post-Processing
 ### Install
 
 ```bash
-# Clone
-git clone https://github.com/historacle-ai/blabberer.git
-cd blabberer
+pip install blabberer
+# or: uv pip install blabberer
+```
 
-# Install (pick one)
-uv pip install -e .
-# or: pip install -e .
+Or install from source:
+```bash
+git clone https://github.com/HistOracle-production/blabberer.git
+cd blabberer
+pip install -e .
 ```
 
 ### Generate sprites
