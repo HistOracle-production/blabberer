@@ -1,0 +1,25 @@
+{
+  "name": "blabber",
+  "description": "Generate lip sync mouth shape sprites from any face image using AI. Includes a complete pipeline skill for sprite generation, post-processing, and browser-based demo with real-time audio-driven animation.",
+  "version": "0.1.0",
+  "author": {
+    "name": "HistOracle",
+    "url": "https://github.com/historacle-ai"
+  },
+  "homepage": "https://github.com/historacle-ai/blabber",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/historacle-ai/blabber.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "lip-sync",
+    "viseme",
+    "mouth-shapes",
+    "sprites",
+    "animation",
+    "ai",
+    "gemini",
+    "preston-blair"
+  ]
+}

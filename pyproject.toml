@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "blabber"
+version = "0.1.0"
+description = "Generate lip sync mouth shape sprites from any face image using AI"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "HistOracle", email = "team@historacle.ai" },
+]
+keywords = ["lip-sync", "viseme", "mouth-shapes", "sprites", "animation", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "Pillow>=10.0",
+    "rembg>=2.0",
+    "mediapipe>=0.10",
+]
+
+[project.scripts]
+blabber = "blabber.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/historacle-ai/blabber"
+Repository = "https://github.com/historacle-ai/blabber"
+Issues = "https://github.com/historacle-ai/blabber/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["blabber"]
+
+[tool.hatch.build.targets.sdist]
+include = ["blabber/", "reference/", "README.md", "LICENSE"]
