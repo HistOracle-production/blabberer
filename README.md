@@ -14,14 +14,7 @@ Turn any face photo into 9 production-ready mouth shape sprites — and animate 
 
 <br>
 
-https://github.com/user-attachments/assets/REPLACE_WITH_VIDEO_ID
-
-<!-- To embed the video above:
-     1. Go to https://github.com/historacle-ai/blabberer/issues/new
-     2. Drag & drop demo/public/sample/demo_video.mp4 into the comment box
-     3. GitHub will generate a URL like: https://github.com/user-attachments/assets/<UUID>
-     4. Replace the placeholder URL above with that generated URL
-     5. Close the issue without submitting -->
+<video src="https://github.com/HistOracle-production/blabberer/raw/main/demo/public/sample/demo_video.mp4" autoplay loop muted playsinline width="600"></video>
 
 </div>
 
